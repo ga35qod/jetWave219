@@ -1,0 +1,186 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "nvidia,tegra234";
+
+    fragment@0 {
+        target-path = "/i2c@c250000";
+        __overlay__ {
+            /* Right camera on CAM0: IMX219 @ 0x10 */
+            imx219_cam0: imx219_a@10 {
+                compatible = "nvidia,imx219";
+                reg = <0x10>;
+                status = "okay";
+
+                clocks = <&bpmp_clks TEGRA234_CLK_EXTPERIPH1>;
+                clock-names = "extperiph1";
+                mclk = "extperiph1";
+
+                /* Adjust these GPIOs if Waveshare uses different PWDN/RESET lines */
+                pwdn-gpios = <&gpio TEGRA234_MAIN_GPIO(H, 3) GPIO_ACTIVE_HIGH>;
+                reset-gpios = <&gpio TEGRA234_MAIN_GPIO(H, 6) GPIO_ACTIVE_LOW>;
+
+                /* Basic mode table: 1920x1080@30, 2-lane */
+                mode0 {
+                    mclk_khz = "24000";
+                    num_lanes = "2";
+                    tegra_sinterface = "serial_a";
+                    discontinuous_clk = "yes";
+                    dpcm_enable = "false";
+                    cil_settletime = "0";
+
+                    active_w = "1920";
+                    active_h = "1080";
+                    pixel_t = "bayer_rggb10";
+                    readout_orientation = "0";
+                    line_length = "3448";
+                    inherent_gain = "1";
+                    mclk_multiplier = "32";
+                    pix_clk_hz = "800000000";
+
+                    min_gain_val = "1.0";
+                    max_gain_val = "16.0";
+                    min_hdr_ratio = "1";
+                    max_hdr_ratio = "1";
+                    min_framerate = "2000000";
+                    max_framerate = "30000000";
+                    min_exp_time = "34";
+                    max_exp_time = "683709000";
+                };
+
+                ports {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+
+                    port@0 {
+                        reg = <0>;
+                        imx219_cam0_out0: endpoint {
+                            port-index = <0>;
+                            bus-width = <2>;
+                            remote-endpoint = <&csi_cam0_in0>;
+                        };
+                    };
+                };
+            };
+
+            /* Left camera on CAM1: IMX219 @ 0x10 on a different I2C bus (example) */
+        };
+    };
+
+    fragment@1 {
+        target-path = "/i2c@c240000";
+        __overlay__ {
+            imx219_cam1: imx219_b@10 {
+                compatible = "nvidia,imx219";
+                reg = <0x10>;
+                status = "okay";
+
+                clocks = <&bpmp_clks TEGRA234_CLK_EXTPERIPH2>;
+                clock-names = "extperiph2";
+                mclk = "extperiph2";
+
+                pwdn-gpios = <&gpio TEGRA234_MAIN_GPIO(H, 4) GPIO_ACTIVE_HIGH>;
+                reset-gpios = <&gpio TEGRA234_MAIN_GPIO(H, 7) GPIO_ACTIVE_LOW>;
+
+                mode0 {
+                    mclk_khz = "24000";
+                    num_lanes = "2";
+                    tegra_sinterface = "serial_c";
+                    discontinuous_clk = "yes";
+                    dpcm_enable = "false";
+                    cil_settletime = "0";
+
+                    active_w = "1920";
+                    active_h = "1080";
+                    pixel_t = "bayer_rggb10";
+                    readout_orientation = "0";
+                    line_length = "3448";
+                    inherent_gain = "1";
+                    mclk_multiplier = "32";
+                    pix_clk_hz = "800000000";
+
+                    min_gain_val = "1.0";
+                    max_gain_val = "16.0";
+                    min_hdr_ratio = "1";
+                    max_hdr_ratio = "1";
+                    min_framerate = "2000000";
+                    max_framerate = "30000000";
+                    min_exp_time = "34";
+                    max_exp_time = "683709000";
+                };
+
+                ports {
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+
+                    port@0 {
+                        reg = <0>;
+                        imx219_cam1_out0: endpoint {
+                            port-index = <2>;
+                            bus-width = <2>;
+                            remote-endpoint = <&csi_cam1_in0>;
+                        };
+                    };
+                };
+            };
+        };
+    };
+
+    fragment@2 {
+        target-path = "/tegra-capture-vi";
+        __overlay__ {
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port@0 {
+                    reg = <0>;
+                    csi_vi_in0: endpoint {
+                        port-index = <0>;
+                        bus-width = <2>;
+                        remote-endpoint = <&csi_cam0_in0>;
+                    };
+                };
+
+                port@2 {
+                    reg = <2>;
+                    csi_vi_in2: endpoint {
+                        port-index = <2>;
+                        bus-width = <2>;
+                        remote-endpoint = <&csi_cam1_in0>;
+                    };
+                };
+            };
+        };
+    };
+
+    fragment@3 {
+        target-path = "/host1x/nvcsi@15a00000";
+        __overlay__ {
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port@0 {
+                    reg = <0>;
+                    csi_cam0_in0: endpoint {
+                        port-index = <0>;
+                        bus-width = <2>;
+                        remote-endpoint = <&imx219_cam0_out0>;
+                    };
+                };
+
+                port@2 {
+                    reg = <2>;
+                    csi_cam1_in0: endpoint {
+                        port-index = <2>;
+                        bus-width = <2>;
+                        remote-endpoint = <&imx219_cam1_out0>;
+                    };
+                };
+            };
+        };
+    };
+};
+
